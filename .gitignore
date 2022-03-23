@@ -147,3 +147,4 @@ data
 # db client
 aerich.*
 migrations*
+.env_
