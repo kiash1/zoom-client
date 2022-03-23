@@ -1,0 +1,46 @@
+version: "3.7"
+
+volumes:
+  db-zoom:
+    external: true
+
+services:
+
+  redis:
+    image: redis:latest
+    networks:
+      default:
+
+  web:
+    image: ${ZOOM_IMAGE}:${ZOOM_TAG}
+    volumes:
+      - ./app:/app/app
+    env_file:
+      - .env
+    depends_on:
+      - mysql
+    ports:
+      - "5000:5000"
+    networks:
+      default:
+      dhakamed-net:
+        aliases:
+        - zoom-api
+
+  mysql:
+    image: mysql:5.7
+    ports:
+      - "3309:3306"
+    env_file:
+      - .env
+    networks:
+      default:
+    volumes:
+      - db-zoom:/var/lib/mysql
+      # - "/etc/timezone:/etc/timezone:ro"
+      # - "/etc/localtime:/etc/localtime:ro"
+
+networks:
+  default:
+  dhakamed-net:
+    external: true

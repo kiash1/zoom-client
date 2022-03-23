@@ -1,0 +1,41 @@
+stages:
+  - build
+  - deploy
+
+build:
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  before_script:
+    - docker login $CI_REGISTRY --username $CI_REGISTRY_USER --password $CI_REGISTRY_PASSWORD
+  script:
+    - export
+    - docker build -f Dockerfile -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+  only:
+    - develop
+    - preprod
+    - live
+    - new-ci
+  tags:
+    - build
+
+deploy_dev:
+  stage: deploy
+  image: alpine
+  before_script:
+    - apk add openssh-client
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+  script:
+    - ssh -o StrictHostKeyChecking=no appmin@$DEV_IP "cd /home/appmin/deploy/zoom-client; make down up; cd /home/appmin/deploy/lifemed-care-swarm; make lb-restart"
+  tags:
+    -  deploy-mhealth
+  only:
+    - develop
+    - new-ci
